@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -12,7 +11,7 @@ import (
 
 // User struct holds dayStreak and totalActivity from scrape
 type User struct {
-	dayStreak, totalActivity int64
+	dayStreak, totalActivity string
 }
 
 var usersString string
@@ -23,7 +22,7 @@ func init() {
 	flag.StringVar(&usersString, "users", "", "A comma seperated list of users to scrape")
 }
 
-func scrape(baseURL string, user string) (dayStreak, totalActivity int64) {
+func scrape(baseURL string, user string) (dayStreak, totalActivity string) {
 	doc, err := goquery.NewDocument(baseURL + user)
 	if err != nil {
 		log.Fatal(err)
@@ -33,9 +32,9 @@ func scrape(baseURL string, user string) (dayStreak, totalActivity int64) {
 	doc.Find(".grid-row.profile-time").Each(func(i int, start *goquery.Selection) {
 		start.Find("h3").Each(func(i int, it *goquery.Selection) {
 			if count == 0 {
-				totalActivity, err = strconv.ParseInt(it.Text(), 0, 10)
+				totalActivity = it.Text()
 			} else {
-				dayStreak, err = strconv.ParseInt(it.Text(), 0, 10)
+				dayStreak = it.Text()
 			}
 			count = count + 1
 		})
@@ -43,11 +42,11 @@ func scrape(baseURL string, user string) (dayStreak, totalActivity int64) {
 	return dayStreak, totalActivity
 }
 
-func print(user string, totalActivity int64, dayStreak int64) {
+func print(user string, totalActivity, dayStreak string) {
 	fmt.Println("User: " + user)
 	fmt.Println("---------------------")
-	fmt.Println("Day Streak: " + strconv.FormatInt(dayStreak, 10))
-	fmt.Println("Total Acitivty: " + strconv.FormatInt(totalActivity, 10))
+	fmt.Println("Day Streak: " + dayStreak)
+	fmt.Println("Total Acitivty: " + totalActivity)
 	fmt.Println("")
 }
 
@@ -63,15 +62,12 @@ func main() {
 	flag.Parse()
 	printHeader()
 
-	users := strings.Split(usersString, ",")
-
-	for _, user := range users {
+	for _, user := range strings.Split(usersString, ",") {
 		trimmedUser := strings.TrimSpace(user)
 		streak, activity := scrape(baseURL, trimmedUser)
 		results[trimmedUser] = User{streak, activity}
 	}
 
-	// Results
 	for user, data := range results {
 		print(user, data.totalActivity, data.dayStreak)
 	}
